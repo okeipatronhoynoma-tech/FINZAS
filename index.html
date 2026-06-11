@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanzas Pro PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #e0e7ff;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding-bottom: 90px;
+            min-height: 100vh;
+        }
+
+        .app-container { max-width: 800px; margin: 0 auto; padding: 15px; }
+
+        /* Encabezado Fijo */
+        header {
+            position: sticky; top: 10px; z-index: 100;
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            padding: 15px; border-radius: var(--radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .mascot-container {
+            width: 55px; height: 55px;
+            animation: levitate 4s ease-in-out infinite;
+        }
+
+        @keyframes levitate {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(3deg); }
+        }
+
+        header h1 { font-size: 22px; font-weight: 800; color: var(--primary); }
+
+        /* Vistas */
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Tarjetas */
+        .card {
+            background: var(--surface); border-radius: var(--radius);
+            padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        .card h2 { font-size: 18px; margin-bottom: 20px; color: var(--text); border-bottom: 2px solid var(--bg); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+
+        /* Formularios y Ajuste de casillas */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .full-width { grid-template-columns: 1fr; }
+        label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        input, select {
+            width: 100%; padding: 14px; border-radius: 10px; border: 2px solid var(--border);
+            background: var(--bg); outline: none; transition: 0.2s; font-size: 18px; font-weight: 700;
+        }
+        input:focus, select:focus { border-color: var(--primary); background: #fff; }
+
+        /* Dashboard Hoy */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .dash-box { padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border); background: #fff;}
+        .dash-box p { font-size: 12px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;}
+        .dash-box h3 { font-size: 22px; margin-top: 5px; }
+        .hero-box { grid-column: 1 / -1; background: var(--primary); color: white; border: none; padding: 25px; border-radius: 16px;}
+        .hero-box p { color: rgba(255,255,255,0.8); }
+
+        /* Entradas múltiples optimizadas para montos grandes */
+        .dynamic-item-row { display: grid; grid-template-columns: 1fr 140px auto; gap: 10px; margin-bottom: 10px; }
+        .i-amount { text-align: right; }
+        .btn-remove { background: var(--danger); color: white; border: none; width: 45px; height: 50px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .btn-add-row { background: transparent; color: var(--primary); border: 2px dashed var(--primary); width: 100%; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; margin-bottom: 20px; }
+
+        /* Botones Generales */
+        .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; text-align: center; color: white; margin-bottom: 10px; }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #64748b; }
+
+        /* Lista Anual y Desglose Diario */
+        .month-row { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background 0.2s; border-radius: 8px;}
+        .month-row:hover { background: var(--bg); }
+        .m-name { font-weight: 800; font-size: 16px; width: 100px; color: var(--primary); }
+        .m-spent { color: var(--danger); font-size: 14px; flex: 1; text-align: center; font-weight: 600;}
+        .m-total { font-weight: 800; font-size: 16px; width: 120px; text-align: right;}
+        .total-positivo { color: var(--success); }
+        .total-negativo { color: var(--danger); }
+        
+        .month-details { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px dashed #cbd5e1; display: none; animation: fadeIn 0.3s ease; }
+        .month-details.open { display: block; }
+        .day-group { margin-bottom: 12px; }
+        .day-header { font-size: 13px; font-weight: 700; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .ticket-item { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding: 2px 0; }
+
+        .grand-total { background: #1e293b; color: white; padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center; font-size: 20px;}
+
+        /* Elementos de la Sección Guía */
+        .guide-item { margin-bottom: 18px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .guide-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .guide-tag { display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 6px; text-transform: uppercase; margin-bottom: 6px; }
+        .tag-blue { background: var(--primary-light); color: var(--primary); }
+        .tag-green { background: #d1fae5; color: var(--success); }
+        .tag-orange { background: #fef3c7; color: #d97706; }
+        .guide-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+        .guide-text { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+
+        /* Barra de Navegación */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+            padding: 12px 5px; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 700; flex: 1; text-align: center;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { width: 22px; height: 22px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <datalist id="suggestionsList"></datalist>
+
+    <div class="app-container">
+
+        <header>
+            <div class="mascot-container">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="finbyBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#818cf8" />
+                            <stop offset="100%" stop-color="#4f46e5" />
+                        </linearGradient>
+                        <radialGradient id="screenGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#38bdf8" />
+                            <stop offset="100%" stop-color="#0284c7" />
+                        </radialGradient>
+                    </defs>
+                    <line x1="50" y1="20" x2="50" y2="5" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="50" cy="5" r="5" fill="#f59e0b" />
+                    <rect x="20" y="25" width="60" height="60" rx="20" fill="url(#finbyBody)" />
+                    <rect x="28" y="38" width="44" height="28" rx="8" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+                    <rect x="30" y="40" width="40" height="24" rx="6" fill="url(#screenGlow)" opacity="0.3"/>
+                    <path d="M35 48 Q40 40 45 48" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M55 48 Q60 40 65 48" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="10" cy="55" r="8" fill="#818cf8"/>
+                    <circle cx="90" cy="55" r="8" fill="#818cf8"/>
+                </svg>
+            </div>
+            <h1>Finanzas Pro</h1>
+        </header>
+
+        <div id="view-hoy" class="page active">
+            
+            <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border: none;">
+                <h2 style="border-bottom: none; color: white; margin-bottom: 10px;">Presupuesto Base del Mes</h2>
+                <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 140px;">
+                        <label style="color: #94a3b8;">Mes/Año</label>
+                        <input type="month" id="budgetMonthPicker" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);" onchange="updateDashboard()">
+                    </div>
+                    <div style="flex: 1; min-width: 140px;">
+                        <label style="color: #94a3b8;">Monto Total ($)</label>
+                        <input type="number" id="budgetAmount" placeholder="Ej. 10000" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">
+                    </div>
+                    <button class="btn btn-success" style="width: auto; padding: 12px 20px; margin-bottom: 0;" onclick="saveMonthlyBudget()">Fijar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Estado de Hoy <input type="date" id="dailyDatePicker" onchange="updateDashboard()" style="width: 180px; padding: 6px 8px; font-size: 15px;"></h2>
+                
+                <div class="dashboard-grid">
+                    <div class="dash-box hero-box" id="boxDisponible">
+                        <p>Te quedan disponibles hoy</p>
+                        <h3 id="lblDisponibleHoy">$0.00</h3>
+                    </div>
+                    <div class="dash-box">
+                        <p>Tu límite diario era</p>
+                        <h3 id="lblPresupuestoDiario" style="color: var(--primary);">$0.00</h3>
+                    </div>
+                    <div class="dash-box">
+                        <p>Has gastado hoy</p>
+                        <h3 id="lblGastadoHoy" style="color: var(--danger);">$0.00</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-cargar" class="page">
+            <div class="card">
+                <h2>Registrar Gastos</h2>
+                <p style="font-size: 13px; color: var(--danger); margin-bottom: 15px; font-weight: bold;">* Todo lo registrado aquí se descontará de tu presupuesto mensual.</p>
+                
+                <div class="form-row full-width">
+                    <div>
+                        <label>Fecha del Gasto</label>
+                        <input type="date" id="inputDate">
+                    </div>
+                </div>
+
+                <label style="margin-top:10px; padding-bottom:5px; border-bottom:1px solid #eee;">Detalle de Gastos</label>
+                <div id="dynamicList">
+                    <div class="dynamic-item-row">
+                        <input type="text" class="i-desc" placeholder="¿En qué gastaste?" list="suggestionsList">
+                        <input type="number" class="i-amount" placeholder="$0.00" min="0" step="0.01">
+                        <button class="btn-remove" onclick="this.parentElement.remove()">X</button>
+                    </div>
+                </div>
+                <button class="btn-add-row" onclick="addRow()">+ Añadir otro gasto a la lista</button>
+                <button class="btn btn-primary" onclick="saveMovements()">Descontar del Presupuesto</button>
+            </div>
+        </div>
+
+        <div id="view-anual" class="page">
+            <div class="card">
+                <h2>Reporte de Gastos Anual</h2>
+                <div style="margin-bottom: 20px;">
+                    <label>Selecciona el Año</label>
+                    <select id="yearSelector" onchange="renderAnual()">
+                        </select>
+                </div>
+
+                <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 10px;">Toca un mes para ver el desglose por día.</p>
+                
+                <div id="anualList"></div>
+
+                <div class="grand-total">
+                    <p style="font-size: 14px; font-weight: normal; margin-bottom: 5px; color: #cbd5e1;">Balance Final del Año</p>
+                    <strong id="lblGrandTotal">$0.00</strong>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-guia" class="page">
+            <div class="card">
+                <h2>Manual de Uso e Instrucciones</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Aprende cómo funciona el algoritmo inteligente de Finanzas Pro para administrar tu dinero día a día.</p>
+                
+                <div class="guide-item">
+                    <span class="guide-tag tag-blue">Paso 1</span>
+                    <div class="guide-title">Presupuesto Base del Mes</div>
+                    <div class="guide-text">Es la cantidad de dinero total que tienes disponible para gastar durante todo el mes en curso. Al ingresar este monto, el sistema lo dividirá automáticamente de manera equitativa entre los días totales que correspondan a ese mes.</div>
+                </div>
+
+                <div class="guide-item">
+                    <span class="guide-tag tag-orange">Concepto</span>
+                    <div class="guide-title">Límite Diario</div>
+                    <div class="guide-text">Es tu tope ideal de gasto diario. Se calcula agarrando tu <strong>Presupuesto Mensual Base</strong> y dividiéndolo entre los días del mes (ej. si asignas $30,000 para un mes de 30 días, tu límite diario ideal será de $1,000).</div>
+                </div>
+
+                <div class="guide-item">
+                    <span class="guide-tag tag-green">Concepto</span>
+                    <div class="guide-title">Disponible Hoy</div>
+                    <div class="guide-text">Es tu termómetro financiero en tiempo real. Te dice cuánto dinero real te queda por gastar el día de hoy. Si gastas menos de tu Límite Diario, la barra se mantendrá en color azul <strong>indícandote saldo a favor</strong>. Si gastas de más, se pondrá en rojo avisándote que excediste tu presupuesto de hoy.</div>
+                </div>
+
+                <div class="guide-item">
+                    <span class="guide-tag tag-blue">Paso 2</span>
+                    <div class="guide-title">Cargar Gastos y Recomendaciones</div>
+                    <div class="guide-text">En la pestaña "Cargar" puedes apuntar tus compras del día. El sistema recuerda tus conceptos previos. Si escribes una letra (por ejemplo <strong>"T"</strong>), se abrirá una recomendación automática con la palabra <strong>"Tacos"</strong> para que no tengas que escribirlo todo de nuevo. ¡No olvides pulsar el botón "Descontar del Presupuesto" para procesarlo!</div>
+                </div>
+
+                <div class="guide-item">
+                    <span class="guide-tag tag-orange">Análisis</span>
+                    <div class="guide-title">Reporte Anual Integrado</div>
+                    <div class="guide-text">Aquí monitoreas el año completo mes por mes. Al tocar cualquiera de los meses de la lista, se desplegará instantáneamente una lista organizada con los días y tickets exactos que cargaste para auditar tus finanzas pasadas.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-config" class="page">
+            <div class="card">
+                <h2>Copia de Seguridad (Data)</h2>
+                <p style="color: var(--text-muted); font-size:14px; margin-bottom:15px;">Guarda tus datos en un archivo externo o restáuralos en esta PWA.</p>
+                
+                <button class="btn btn-success" onclick="exportData()">Exportar Copia de Seguridad</button>
+                
+                <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                    <label>Importar Copia de Seguridad</label>
+                    <input type="file" id="importFile" accept=".json" style="font-size: 14px; padding: 8px; margin-bottom: 10px;">
+                    <button class="btn btn-secondary" onclick="importData()">Importar Datos</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Limpieza</h2>
+                <p style="color: var(--text-muted); font-size:14px; margin-bottom:20px;">Utiliza este botón si necesitas reiniciar por completo tu aplicación.</p>
+                <button class="btn btn-danger" onclick="wipeSystem()">Borrar Todos los Datos</button>
+            </div>
+        </div>
+
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('hoy', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
+            Hoy
+        </div>
+        <div class="nav-item" onclick="switchTab('cargar', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+            Cargar
+        </div>
+        <div class="nav-item" onclick="switchTab('anual', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+            Anual
+        </div>
+        <div class="nav-item" onclick="switchTab('guia', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9v7a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1H5v-3a7 7 0 0 1 14 0v3h-2a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-7a9 9 0 0 0-9-9zM19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 16H5V4h14v14z M7 6h10v2H7z M7 10h10v2H7z M7 14h7v2H7z"/></svg>
+            Guía
+        </div>
+        <div class="nav-item" onclick="switchTab('config', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.49-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            Ajustes
+        </div>
+    </nav>
+
+    <script>
+        const STORAGE_KEY = 'finanzas_pro_v5';
+        let db = { movements: [], budgets: {} };
+
+        function loadDatabase() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (parsed && typeof parsed === 'object') {
+                        db.movements = parsed.movements || [];
+                        db.budgets = parsed.budgets || {};
+                    }
+                }
+            } catch (e) {
+                console.error("Error leyendo localStorage", e);
+            }
+        }
+
+        function saveDatabase() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            buildSuggestions();
+        }
+
+        function buildSuggestions() {
+            const dl = document.getElementById('suggestionsList');
+            if(!dl) return;
+            
+            const uniqueDescriptions = [...new Set(db.movements.map(m => m.desc))].sort();
+            dl.innerHTML = '';
+            uniqueDescriptions.forEach(desc => {
+                const option = document.createElement('option');
+                option.value = desc;
+                dl.appendChild(option);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDatabase();
+            generateYearOptions();
+            buildSuggestions();
+
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            
+            const fullDate = `${y}-${m}-${d}`;
+            const monthDate = `${y}-${m}`;
+
+            document.getElementById('inputDate').value = fullDate;
+            document.getElementById('dailyDatePicker').value = fullDate;
+            document.getElementById('budgetMonthPicker').value = monthDate;
+            document.getElementById('yearSelector').value = y.toString();
+
+            updateDashboard();
+        });
+
+        function generateYearOptions() {
+            const selector = document.getElementById('yearSelector');
+            selector.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear - 5; i <= currentYear + 15; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = i;
+                selector.appendChild(opt);
+            }
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('view-' + tabId).classList.add('active');
+            el.classList.add('active');
+            
+            if(tabId === 'hoy') updateDashboard();
+            if(tabId === 'anual') renderAnual();
+        }
+
+        // ================== PESTAÑA 1: HOY ==================
+        function saveMonthlyBudget() {
+            const monthKey = document.getElementById('budgetMonthPicker').value;
+            const amount = parseFloat(document.getElementById('budgetAmount').value);
+            
+            if(monthKey && !isNaN(amount) && amount >= 0) {
+                db.budgets[monthKey] = amount;
+                saveDatabase();
+                alert("Presupuesto guardado.");
+                updateDashboard();
+            } else {
+                alert("Ingresa un monto válido.");
+            }
+        }
+
+        function updateDashboard() {
+            const dateStr = document.getElementById('dailyDatePicker').value;
+            if(!dateStr) return;
+
+            const [year, month, day] = dateStr.split('-');
+            const monthKey = `${year}-${month}`;
+
+            const monthlyBudget = db.budgets[monthKey] || 0;
+            document.getElementById('budgetAmount').value = monthlyBudget > 0 ? monthlyBudget : '';
+
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const dailyBudget = monthlyBudget / daysInMonth;
+
+            let spentToday = 0;
+            db.movements.forEach(m => {
+                if(m.date === dateStr) {
+                    spentToday += m.amount;
+                }
+            });
+
+            const availableToday = dailyBudget - spentToday;
+
+            document.getElementById('lblPresupuestoDiario').innerText = `$${dailyBudget.toFixed(2)}`;
+            document.getElementById('lblGastadoHoy').innerText = `$${spentToday.toFixed(2)}`;
+            
+            const hero = document.getElementById('lblDisponibleHoy');
+            hero.innerText = `$${availableToday.toFixed(2)}`;
+            
+            const boxDisp = document.getElementById('boxDisponible');
+            if(availableToday < 0) {
+                boxDisp.style.background = 'var(--danger)';
+            } else {
+                boxDisp.style.background = 'var(--primary)';
+            }
+        }
+
+        // ================== PESTAÑA 2: CARGAR ==================
+        function addRow() {
+            const div = document.createElement('div');
+            div.className = 'dynamic-item-row';
+            div.innerHTML = `
+                <input type="text" class="i-desc" placeholder="¿En qué gastaste?" list="suggestionsList">
+                <input type="number" class="i-amount" placeholder="$0.00" min="0" step="0.01">
+                <button class="btn-remove" onclick="this.parentElement.remove()">X</button>
+            `;
+            document.getElementById('dynamicList').appendChild(div);
+        }
+
+        function saveMovements() {
+            const dateStr = document.getElementById('inputDate').value;
+            if(!dateStr) { alert("Elige una fecha."); return; }
+            
+            const [year, month, day] = dateStr.split('-');
+            const rows = document.querySelectorAll('.dynamic-item-row');
+            let saved = 0;
+
+            rows.forEach(row => {
+                const desc = row.querySelector('.i-desc').value.trim();
+                const amount = parseFloat(row.querySelector('.i-amount').value);
+                if (desc && !isNaN(amount) && amount > 0) {
+                    db.movements.push({ year, month, date: dateStr, desc, amount });
+                    saved++;
+                }
+            });
+
+            if (saved > 0) {
+                saveDatabase();
+                alert(`Guardados ${saved} gastos.`);
+                const list = document.getElementById('dynamicList');
+                list.innerHTML = `
+                    <div class="dynamic-item-row">
+                        <input type="text" class="i-desc" placeholder="¿En qué gastaste?" list="suggestionsList">
+                        <input type="number" class="i-amount" placeholder="$0.00" min="0" step="0.01">
+                        <button class="btn-remove" onclick="this.parentElement.remove()">X</button>
+                    </div>
+                `;
+                updateDashboard();
+            } else {
+                alert("Completa campos con valores válidos.");
+            }
+        }
+
+        // ================== PESTAÑA 3: ANUAL ==================
+        function renderAnual() {
+            const year = document.getElementById('yearSelector').value;
+            const listDiv = document.getElementById('anualList');
+            listDiv.innerHTML = '';
+
+            const monthsNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            let grandTotal = 0;
+
+            monthsNames.forEach((name, index) => {
+                const monthNum = String(index + 1).padStart(2, '0');
+                const monthKey = `${year}-${monthNum}`;
+                
+                const budget = db.budgets[monthKey] || 0;
+                let gastos = 0;
+
+                db.movements.forEach(m => {
+                    if (m.year === year && m.month === monthNum) gastos += m.amount;
+                });
+
+                const balanceMes = budget - gastos;
+                grandTotal += balanceMes;
+
+                const hasData = (budget > 0 || gastos > 0);
+                const colorClass = balanceMes >= 0 ? 'total-positivo' : 'total-negativo';
+                const sign = balanceMes >= 0 ? '+' : '';
+
+                const row = document.createElement('div');
+                row.className = 'month-row';
+                row.innerHTML = `
+                    <span class="m-name">${name}</span>
+                    <span class="m-spent">- $${gastos.toFixed(2)}</span>
+                    <span class="m-total ${hasData ? colorClass : ''}">${hasData ? sign : ''}$${balanceMes.toFixed(2)}</span>
+                `;
+                
+                row.onclick = () => toggleMonthDetails(year, monthNum, row);
+                listDiv.appendChild(row);
+            });
+
+            const lblGrand = document.getElementById('lblGrandTotal');
+            lblGrand.innerText = `${grandTotal >= 0 ? '+' : ''}$${grandTotal.toFixed(2)}`;
+            lblGrand.style.color = grandTotal >= 0 ? '#4ade80' : '#f87171';
+        }
+
+        function toggleMonthDetails(year, monthNum, rowElement) {
+            const detailId = `detail-${year}-${monthNum}`;
+            let existingDetail = document.getElementById(detailId);
+            
+            if (existingDetail) {
+                existingDetail.remove();
+                return;
+            }
+
+            const monthMovs = db.movements.filter(m => m.year === year && m.month === monthNum);
+            if (monthMovs.length === 0) {
+                alert("No hay gastos en este mes.");
+                return;
+            }
+
+            const groupedByDate = {};
+            monthMovs.forEach(m => {
+                if (!groupedByDate[m.date]) groupedByDate[m.date] = [];
+                groupedByDate[m.date].push(m);
+            });
+
+            const detailDiv = document.createElement('div');
+            detailDiv.id = detailId;
+            detailDiv.className = 'month-details open';
+
+            const sortedDates = Object.keys(groupedByDate).sort().reverse();
+
+            sortedDates.forEach(date => {
+                const [y, m, d] = date.split('-');
+                const dailyTotal = groupedByDate[date].reduce((sum, item) => sum + item.amount, 0);
+                
+                let dayHtml = `
+                    <div class="day-group">
+                        <div class="day-header">
+                            <span>Día ${d}/${m}</span>
+                            <span style="color: var(--danger)">-$${dailyTotal.toFixed(2)}</span>
+                        </div>
+                `;
+
+                groupedByDate[date].forEach(item => {
+                    dayHtml += `
+                        <div class="ticket-item">
+                            <span>• ${item.desc}</span>
+                            <span>$${item.amount.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+
+                dayHtml += `</div>`;
+                detailDiv.innerHTML += dayHtml;
+            });
+
+            rowElement.insertAdjacentElement('afterend', detailDiv);
+        }
+
+        // ================== PESTAÑA 5: AJUSTES ==================
+        function exportData() {
+            if (db.movements.length === 0 && Object.keys(db.budgets).length === 0) {
+                alert("No hay información financiera para exportar.");
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Finanzas_Pro_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('importFile');
+            if (fileInput.files.length === 0) {
+                alert("Selecciona un archivo .json válido.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedDb = JSON.parse(e.target.result);
+                    if (importedDb && (importedDb.movements || importedDb.budgets)) {
+                        db.movements = importedDb.movements || [];
+                        db.budgets = importedDb.budgets || {};
+                        saveDatabase();
+                        alert("¡Información restaurada con éxito!");
+                        updateDashboard();
+                        buildSuggestions();
+                    } else {
+                        alert("Formato incorrecto.");
+                    }
+                } catch (err) {
+                    alert("Error al leer el archivo.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function wipeSystem() {
+            if (confirm('¿Borrar toda la base de datos?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                db = { movements: [], budgets: {} };
+                updateDashboard();
+                buildSuggestions();
+                alert('Sistema limpiado.');
+            }
+        }
+
+        // ================== REGISTRO DEL SERVICE WORKER (PWA) ==================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('PWA lista y registrada con éxito', reg))
+                    .catch(err => console.error('Error registrando la PWA', err));
+            });
+        }
+    </script>
+</body>
+</html>
